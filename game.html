@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>3D Pro Racer - Final Masterpiece</title>
+    <script src='//libtl.com/sdk.js' data-zone='10641290' data-sdk='show_10641290'></script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root { 
+            --neon-yellow: #faff00; 
+            --neon-pink: #ff0055; 
+            --neon-red: #ff3333; 
+            --cyber-black: rgba(10, 12, 18, 0.95); 
+        }
+        body, html { margin: 0; padding: 0; overflow: hidden; height: 100%; width: 100%; background: #1a1a2e; touch-action: none; user-select: none; font-family: 'Montserrat', sans-serif; }
+        canvas { display: block; }
+        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 100; }
+        
+        /* ড্যাশবোর্ড - হাই কন্ট্রাস্ট */
+        #dashboard { position: absolute; top: 15px; left: 15px; background: none; padding: 5px 12px; border-radius: 8px; color: #fff; border-left: 4px solid var(--neon-yellow); }
+        #spd-txt { font-family: 'Orbitron', sans-serif; font-size: 26px; color: var(--neon-yellow); text-shadow: 2px 2px 5px #000, 0 0 10px rgba(250, 255, 0, 0.5); font-weight: 900; }
+        .stat-line { display: flex; align-items: center; gap: 8px; margin-top: 5px; font-size: 14px; font-weight: 800; color: #fff; text-shadow: 2px 2px 4px #000; }
+        
+        .emoji-icon { font-size: 18px; filter: drop-shadow(2px 2px 2px #000); }
+        #fuel-container { width: 55px; height: 10px; background: rgba(0,0,0,0.6); border: 1.5px solid #fff; border-radius: 4px; overflow: hidden; margin-left: 5px; }
+        #fuel-fill { width: 100%; height: 100%; background: var(--neon-red); box-shadow: 0 0 10px var(--neon-red); }
+
+        /* লেভেল বক্স */
+        #level-container { position: absolute; top: 15px; right: 15px; background: none; padding: 5px 15px; border-radius: 10px; border: 2.5px solid var(--neon-yellow); text-align: center; pointer-events: auto; cursor: pointer; box-shadow: 0 0 12px var(--neon-yellow); }
+        #level-val { font-family: 'Orbitron', sans-serif; font-size: 22px; color: var(--neon-yellow); font-weight: 900; display: block; text-shadow: 2px 2px 5px #000; }
+        #level-label { font-size: 10px; color: #fff; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 800; text-shadow: 1px 1px 2px #000; }
+
+        /* নোটিফিকেশন */
+        .toast { position: fixed; left: 50%; transform: translateX(-50%); background: var(--cyber-black); color: var(--neon-yellow); padding: 8px 25px; border-radius: 40px; font-family: 'Orbitron', sans-serif; font-size: 12px; font-weight: 800; border: 2px solid var(--neon-yellow); opacity: 0; transition: 0.3s; z-index: 500; top: 110px; pointer-events: none; }
+
+        #speed-timer-txt { position: fixed; top: 90px; right: 15px; background: rgba(255, 0, 85, 0.95); padding: 10px 20px; border-radius: 10px; border: 2.5px solid #fff; color: #fff; font-family: 'Orbitron', sans-serif; font-size: 18px; font-weight: 900; display: none; animation: blinker 0.4s infinite alternate; }
+        @keyframes blinker { from { opacity: 1; } to { opacity: 0.7; } }
+
+        /* কন্ট্রোল বাটন */
+        .ctrl-btn { position: absolute; width: 85px; height: 85px; background: var(--cyber-black); border: 2.5px solid var(--neon-yellow); border-radius: 22px; color: var(--neon-yellow); display: flex; align-items: center; justify-content: center; pointer-events: auto; cursor: pointer; font-size: 32px; box-shadow: 0 0 15px rgba(0,0,0,0.4); }
+        #slider-rail { position: absolute; width: 16px; height: 180px; background: rgba(255, 255, 255, 0.15); border-radius: 20px; border: 1.5px solid rgba(255,255,255,0.4); pointer-events: auto; }
+        #slider-knob { position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 45px; height: 45px; background: #ff9d00; border-radius: 10px; box-shadow: 0 0 15px #ff9d00; }
+
+        @media (orientation: portrait) { #btn-l { bottom: 40px; left: 25px; } #btn-r { bottom: 40px; right: 25px; } #slider-rail { bottom: 145px; right: 60px; } }
+        @media (orientation: landscape) { #btn-l { bottom: 40px; left: 50px; } #btn-r { bottom: 40px; right: 50px; } #slider-rail { bottom: 150px; right: 85px; } }
+
+        /* পপআপ */
+        #popup { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: var(--cyber-black); padding: 40px; border-radius: 30px; text-align: center; display: none; pointer-events: auto; border: 3px solid var(--neon-pink); width: 320px; color: #fff; box-shadow: 0 0 70px rgba(0,0,0,1); backdrop-filter: blur(10px); }
+        .cyber-btn { display: block; width: 100%; padding: 15px; margin-top: 15px; border-radius: 12px; font-family: 'Orbitron', sans-serif; font-size: 15px; font-weight: 800; cursor: pointer; text-transform: uppercase; border: none; text-decoration: none; color: #000; }
+    </style>
+</head>
+<body>
+
+    <div id="game-toast" class="toast">REWARD SECURED! 💎</div>
+
+    <div id="ui-layer">
+        <div id="dashboard">
+            <div id="spd-txt">30 km/h</div>
+            <div class="stat-line"><span class="emoji-icon">🚀</span> <span id="dist-txt">0 m</span></div>
+            <div class="stat-line"><span class="emoji-icon">🏆</span> <span id="high-txt" style="color: gold;">0 m</span></div>
+            <div class="stat-line"><span class="emoji-icon">💎</span> <span id="coin-txt" style="color: #00d4ff;">0</span>
+                <div id="fuel-container"><div id="fuel-fill"></div></div>
+            </div>
+            <div class="stat-line" style="font-size: 11px;"><span class="emoji-icon">🔧</span> <span id="h-display">100%</span></div>
+        </div>
+
+        <div id="level-container" onclick="showLevelProgress()">
+            <span id="level-label">Level</span>
+            <span id="level-val">1</span>
+        </div>
+
+        <div id="speed-timer-txt">SPEED UP! 5.0s</div>
+        <div id="btn-l" class="ctrl-btn">◀</div>
+        <div id="btn-r" class="ctrl-btn">▶</div>
+        <div id="slider-rail"><div id="slider-knob"></div></div>
+    </div>
+
+    <div id="popup" style="display: block;">
+        <h1 id="pop-title" style="font-family:'Orbitron'; font-size:24px; color:var(--neon-pink);">PRO RACER</h1>
+        <p id="pop-stats" style="font-size:14px; line-height:1.5; margin:15px 0;"></p>
+        <button id="restart-btn" class="cyber-btn" style="background:var(--neon-yellow);">START ENGINE</button>
+        <button id="free-dia-btn" class="cyber-btn" style="background:#ff9d00; display:none;">GET FREE 35 DIAMONDS 💎</button>
+        <a href="index.html" id="home-menu-btn" class="cyber-btn" style="background:transparent; color:var(--neon-yellow); border:2px solid var(--neon-yellow); font-size:12px;">GO TO HOME MENU</a>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <script>
+        // --- ডাটা সেটিংস ---
+        const STORE_KEY = 'cargame_store', AD_COUNT_KEY = 'ad_game_counter';
+        let gameData = JSON.parse(localStorage.getItem(STORE_KEY)) || { totalDist: 0, bestDist: 0, diamonds: 0, carHealth: 100 };
+        let gameOverCounter = parseInt(localStorage.getItem(AD_COUNT_KEY)) || 0;
+        const maxLimitSpeed = parseInt(localStorage.getItem('hight_power')) || 120;
+        const levelMilestones = [0, 150, 300, 700, 1000, 1400, 1900, 2500, 3000, 3500, 4000, 4700, 5500, 6200, 7000, 7800, 8600, 9500, 10500, 12000, 13200, 14500, 16000, 18000, 20000, 23000, 26000, 30000, 35000, 40000, 50000];
+
+        // --- অডিও ---
+        const bgMusic = new Audio('bagraundsound.mp3'); bgMusic.loop = true;
+        const collectSound = new Audio('callect.mp3');
+
+        let scene, camera, renderer, playerCar, animationId;
+        let distance = 0, currentSpeed = 30, coins = 0; 
+        let isGameOver = true, isPaused = false, moveDir = 0, hasRevived = false;
+        let fuelLevel = 14, turboTime = 0, isShortCircuit = false, circuitCooldown = 0;
+        let nearMissCount = 0, invincibilityTime = 0, repairPartsCount = 0;
+        let lastTrafficDist = 0, lastDiamondDist = 0, lastFuelDist = 0, lastRepairDist = 0;
+        let lowSpeedStartTime = 0, lowSpeedTimerActive = false;
+
+        const segments = [], traffic = [], birds = [], clouds = [], diamondObjects = [], fuelObjects = [], repairObjects = [];
+        const segmentSize = 100, totalSegments = 45;
+        const cityColors = [0xe67e22, 0xf1c40f, 0x2980b9, 0xc0392b, 0x16a085, 0xecf0f1, 0x34495e, 0x27ae60];
+        const birdColors = [0x2196f3, 0x03a9f4, 0xffffff, 0x455a64];
+
+        function init() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x87CEEB);
+            scene.fog = new THREE.Fog(0x87CEEB, 800, 2800);
+            camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 1, 6000);
+            camera.position.set(0, 45, 200); camera.lookAt(0, 5, -800);
+            
+            renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            document.body.appendChild(renderer.domElement);
+
+            scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+            const sunLight = new THREE.DirectionalLight(0xffffff, 1.0);
+            sunLight.position.set(200, 600, 100); scene.add(sunLight);
+            const sunM = new THREE.Mesh(new THREE.SphereGeometry(35, 32, 32), new THREE.MeshBasicMaterial({color: 0xffcc00}));
+            sunM.position.set(450, 500, -2500); scene.add(sunM);
+
+            playerCar = createDetailedSportsCar(0x00d4ff);
+            playerCar.scale.set(1.4, 1.4, 1.4); playerCar.position.set(0, 4, 80);
+            scene.add(playerCar);
+
+            for(let i=-5; i<totalSegments; i++) createSegment(-i * segmentSize);
+            for(let i=0; i<20; i++) spawnBird();
+            for(let i=0; i<30; i++) spawnCloud();
+
+            updateDashboardUI(); setupControls(); claimPendingReward();
+            showSmartPopup("READY TO RACE?");
+            renderer.render(scene, camera);
+        }
+
+        // --- হুবহু অরিজিনাল রিয়েলিস্টিক লজিক ---
+        function createDetailedSportsCar(color) {
+            const g = new THREE.Group();
+            const body = new THREE.Mesh(new THREE.BoxGeometry(9, 2.5, 18), new THREE.MeshLambertMaterial({color}));
+            body.position.y = 1.2; g.add(body);
+            const cab = new THREE.Mesh(new THREE.BoxGeometry(7, 3, 9), new THREE.MeshLambertMaterial({color: 0x222222}));
+            cab.position.set(0, 3.2, -1.5); g.add(cab);
+            const spoiler = new THREE.Mesh(new THREE.BoxGeometry(8.5, 1, 3.5), new THREE.MeshLambertMaterial({color: 0x111111}));
+            spoiler.position.set(0, 4.5, 7.5); g.add(spoiler);
+            [[-4.8, -6], [4.8, -6], [-4.8, 6], [4.8, 6]].forEach(p => {
+                const w = new THREE.Mesh(new THREE.CylinderGeometry(2.3, 2.3, 2, 12), new THREE.MeshBasicMaterial({color: 0x0a0a0a}));
+                w.rotation.z = Math.PI/2; w.position.set(p[0], 0, p[1]); g.add(w);
+            });
+            return g;
+        }
+
+        function spawnDetailedBuildings(group, xBase, size, hScale = 1) {
+            let curZ = -size/2;
+            const winMat = new THREE.MeshBasicMaterial({color: 0xfdfd96});
+            while(curZ < size/2) {
+                const floors = 2 + Math.floor(Math.random()*10);
+                const h = floors * 10 * hScale; const d = 25 + Math.random()*25;
+                const bG = new THREE.Group();
+                const body = new THREE.Mesh(new THREE.BoxGeometry(80, h, d), new THREE.MeshLambertMaterial({color: cityColors[Math.floor(Math.random()*cityColors.length)]}));
+                bG.add(body);
+                // অরিজিনাল জানালা
+                const win = new THREE.Mesh(new THREE.PlaneGeometry(20, h * 0.8), winMat);
+                win.position.set(xBase > 0 ? -40.1 : 40.1, 0, 0); win.rotation.y = xBase > 0 ? -Math.PI/2 : Math.PI/2; bG.add(win);
+                // ট্যাংক ও লেজ
+                const ledge = new THREE.Mesh(new THREE.BoxGeometry(84, 3, d+6), new THREE.MeshLambertMaterial({color: 0x333333}));
+                ledge.position.y = h/2 + 1.5; bG.add(ledge);
+                const tank = new THREE.Mesh(new THREE.CylinderGeometry(6, 6, 12, 8), new THREE.MeshLambertMaterial({color: 0x7f8c8d}));
+                tank.position.set(0, h/2 + 6, 0); bG.add(tank);
+                bG.position.set(xBase, h/2, curZ + d/2); group.add(bG);
+                curZ += (d + 0.5); 
+            }
+        }
+
+        function createSegment(z) {
+            const g = new THREE.Group();
+            const absZ = Math.abs(z);
+            const road = new THREE.Mesh(new THREE.PlaneGeometry(100, 100), new THREE.MeshStandardMaterial({color: 0x2d3436}));
+            road.rotation.x = -Math.PI/2; road.position.y = 0.5; g.add(road);
+            const sw = new THREE.Mesh(new THREE.PlaneGeometry(1200, 100), new THREE.MeshLambertMaterial({color: 0x636e72}));
+            sw.rotation.x = -Math.PI/2; g.add(sw);
+            // লেন মার্কিং
+            for(let i=0; i<100; i+=30) {
+                const l = new THREE.Mesh(new THREE.PlaneGeometry(2.5, 18), new THREE.MeshBasicMaterial({color: 0xffffff}));
+                l.rotation.x = -Math.PI/2; l.position.set(0, 0.8, 50-i); g.add(l);
+            }
+            // দুই পাশে অল্টারনেট ল্যাম্পপোস্ট
+            if (absZ % 300 === 0) {
+                const side = (absZ / 300 % 2 === 0) ? -55 : 55;
+                const pole = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 2.5, 90), new THREE.MeshLambertMaterial({color: 0x2c3e50}));
+                pole.position.set(side, 45, 0); g.add(pole);
+                const arm = new THREE.Mesh(new THREE.BoxGeometry(22, 2, 2), new THREE.MeshLambertMaterial({color: 0x2c3e50}));
+                arm.position.set(side > 0 ? side-11 : side+11, 88, 0); g.add(arm);
+                const light = new THREE.Mesh(new THREE.BoxGeometry(8, 2, 6), new THREE.MeshBasicMaterial({color: 0xffffff}));
+                light.position.set(side > 0 ? side-18 : side+18, 87, 0); g.add(light);
+            }
+            spawnDetailedBuildings(g, -150, 100); spawnDetailedBuildings(g, 150, 100);
+            g.position.z = z; scene.add(g); segments.push(g);
+        }
+
+        function spawnBird() {
+            const bG = new THREE.Group();
+            const wingMat = new THREE.MeshLambertMaterial({color: birdColors[Math.floor(Math.random()*4)]});
+            const lw = new THREE.Mesh(new THREE.SphereGeometry(8, 4, 8), wingMat); lw.scale.set(2.5, 0.1, 1.2); lw.position.x = -8; bG.add(lw);
+            const rw = lw.clone(); rw.position.x = 8; bG.add(rw);
+            bG.position.set(Math.random()*3000-1500, 250 + Math.random()*200, -Math.random()*3000);
+            scene.add(bG); birds.push({mesh: bG, lw, rw, off: Math.random()*10, speed: 0.8 + Math.random()*2});
+        }
+
+        // --- পপআপ ও স্মার্ট বাটন লজিক ---
+        function showSmartPopup(title) {
+            const stats = document.getElementById('pop-stats');
+            const startBtn = document.getElementById('restart-btn');
+            const freeBtn = document.getElementById('free-dia-btn');
+            document.getElementById('pop-title').innerText = title;
+            
+            if(gameData.carHealth <= 30) {
+                stats.innerHTML = "ENGINE DAMAGED! (" + gameData.carHealth + "%)<br>Condition below 30%. Repair in Garage.";
+                startBtn.style.display = 'none';
+                freeBtn.style.display = 'none';
+            } else if(gameData.diamonds < 20) {
+                stats.innerHTML = "LOW FUNDS!<br>You need 20 Diamonds.<br>Watch ad to get 35 FREE!";
+                startBtn.style.display = 'none';
+                freeBtn.style.display = 'block';
+                freeBtn.onclick = getFreeDiamonds;
+            } else {
+                stats.innerHTML = "Entry Fee: 20 Diamonds<br>Current Health: " + gameData.carHealth + "%";
+                startBtn.style.display = 'block';
+                startBtn.innerText = "START ENGINE";
+                startBtn.onclick = handleRestart;
+                freeBtn.style.display = 'none';
+            }
+            document.getElementById('popup').style.display = 'block';
+        }
+
+        function handleRestart() {
+            if(gameData.diamonds < 20) return;
+            gameData.diamonds -= 20; saveGameData(); updateDashboardUI(); resetGameState();
+            bgMusic.play().catch(()=>{});
+            animate();
+        }
+
+        function getFreeDiamonds() {
+            localStorage.setItem('pending_ad_reward', 'true');
+            if (typeof show_10641290 === 'function') {
+                show_10641290().then(() => claimPendingReward()).catch(() => { claimPendingReward(); });
+            } else { claimPendingReward(); }
+        }
+
+        function claimPendingReward() {
+            if (localStorage.getItem('pending_ad_reward') === 'true') {
+                gameData.diamonds += 35; saveGameData(); localStorage.removeItem('pending_ad_reward');
+                updateDashboardUI(); showToast("35 DIAMONDS ADDED! 💎");
+                showSmartPopup("READY TO RACE?");
+            }
+        }
+        window.addEventListener('focus', claimPendingReward);
+
+        // --- এনিমেশন ও গেম লুপ ---
+        function animate() {
+            if(isGameOver || isPaused) return;
+            animationId = requestAnimationFrame(animate);
+
+            fuelLevel -= (1/60); document.getElementById('fuel-fill').style.width = (fuelLevel/14*100)+"%";
+            if(fuelLevel <= 0) { triggerGameOver("OUT OF FUEL"); return; }
+
+            let speedRatio = currentSpeed / 120;
+            let finalSpeed = 30 + (speedRatio * (maxLimitSpeed - 30));
+
+            if(finalSpeed > 110 && !isShortCircuit) { turboTime += (1/60); if(turboTime >= 10) { isShortCircuit = true; circuitCooldown = 3; showToast("SHORT CIRCUIT!", true); } }
+            if(isShortCircuit) { finalSpeed = 55; circuitCooldown -= (1/60); if(circuitCooldown <= 0) { isShortCircuit = false; turboTime = 0; } }
+            if(gameData.carHealth < 55) finalSpeed *= 0.90;
+            if(finalSpeed < 50) { 
+                if(!lowSpeedTimerActive) { lowSpeedStartTime=Date.now(); lowSpeedTimerActive=true; document.getElementById('speed-timer-txt').style.display='block'; }
+                let el = (Date.now()-lowSpeedStartTime)/1000;
+                document.getElementById('speed-timer-txt').innerText = "SPEED UP! "+(5-el).toFixed(1)+"s";
+                if(el >= 5) { triggerGameOver("LOW SPEED!"); return; }
+                finalSpeed *= (1 - (50 - finalSpeed) * 0.02);
+            } else { lowSpeedTimerActive=false; document.getElementById('speed-timer-txt').style.display='none'; }
+
+            const pStep = finalSpeed / 2.5; distance += (pStep / 150); 
+            
+            if (distance - lastTrafficDist > 3.1) { spawnTraffic(); lastTrafficDist = distance; }
+            if (distance - lastDiamondDist > 12.5) { spawnEmojiItem('💎'); lastDiamondDist = distance; }
+            if (distance - lastFuelDist > 55) { spawnEmojiItem('⛽'); lastFuelDist = distance; }
+            if (distance - lastRepairDist > 25) { spawnEmojiItem('⚓'); lastRepairDist = distance; }
+
+            segments.forEach(s => { s.position.z += pStep; if(s.position.z > 500) s.position.z -= 4500; });
+            playerCar.position.x += moveDir; playerCar.position.x = Math.max(-45, Math.min(45, playerCar.position.x));
+            if(invincibilityTime > 0) { invincibilityTime -= (1/60); playerCar.position.y = 4.5 + Math.sin(Date.now()*0.02)*0.5; } else playerCar.position.y = 4;
+
+            traffic.forEach((t, i) => {
+                t.mesh.position.z += (pStep - 18); if(t.zig) t.mesh.position.x += Math.sin(Date.now()*0.002 + t.off)*0.6;
+                let dx = Math.abs(t.mesh.position.x - playerCar.position.x), dz = Math.abs(t.mesh.position.z - playerCar.position.z);
+                if(dx < 14 && dz < 25) { if(invincibilityTime <= 0) { triggerGameOver("CRASHED!"); return; } }
+                else if(!t.missed && dz < 20 && dx < 22) { t.missed=true; nearMissCount++; coins+=4; showToast("GREAT MOVE! +4 💎"); if(nearMissCount>=5){ invincibilityTime=4; nearMissCount=0; showToast("INVINCIBLE! 🔥"); } updateDashboardUI(); }
+                if(t.mesh.position.z > 600) { scene.remove(t.mesh); traffic.splice(i,1); }
+            });
+
+            handleItems(diamondObjects, () => { coins++; collectSound.play().catch(()=>{}); showToast("+1 DIAMOND 💎"); });
+            handleItems(fuelObjects, () => { fuelLevel = 14; collectSound.play().catch(()=>{}); showToast("FUEL FULL! ⛽"); });
+            handleItems(repairObjects, () => { gameData.carHealth = Math.min(100, gameData.carHealth+2); repairPartsCount++; collectSound.play().catch(()=>{}); if(repairPartsCount>=5){ gameData.carHealth=Math.min(100, gameData.carHealth+10); repairPartsCount=0; } showToast("HEALTH +2% ⚓"); });
+
+            birds.forEach(b => { b.mesh.position.z += (pStep - 2); b.lw.rotation.z = Math.sin(Date.now()*0.01 + b.off); b.rw.rotation.z = -Math.sin(Date.now()*0.01 + b.off); if(b.mesh.position.z > 600) b.mesh.position.z = -3000; });
+            clouds.forEach(c => { c.mesh.position.x += 0.5; if(c.mesh.position.x > 2000) c.mesh.position.x = -2000; });
+            document.getElementById('spd-txt').innerText = Math.floor(finalSpeed) + " km/h";
+            document.getElementById('dist-txt').innerText = formatVal(distance);
+            renderer.render(scene, camera);
+        }
+
+        // --- ইউটিলিটি ফাংশনসমূহ ---
+        function triggerGameOver(type) {
+            isGameOver = true; bgMusic.pause(); bgMusic.currentTime = 0;
+            const oldLvl = getLevel(gameData.bestDist);
+            const sessionBest = Math.max(gameData.bestDist, Math.floor(distance));
+            const newLvl = getLevel(sessionBest);
+
+            if(newLvl > oldLvl) {
+                let bonus = 0; for(let l=oldLvl+1; l<=newLvl; l++) bonus += (l-1)*20;
+                gameData.diamonds += bonus; gameData.bestDist = sessionBest; saveGameData();
+                showSmartPopup("🎉 CONGRATS! Level Up Bonus: " + bonus + " 💎");
+            } else if(distance > 2000 && !hasRevived) showRevivePopup();
+            else finalizeGameOver(type);
+        }
+
+        function showRevivePopup() {
+            document.getElementById('pop-title').innerText = "WATCH TO REVIVE?";
+            document.getElementById('pop-stats').innerHTML = `Record: ${Math.floor(distance)}m!<br>Watch ad to continue once.`;
+            const btn = document.getElementById('restart-btn'); btn.innerText = "WATCH AD 📺"; btn.style.display = 'block';
+            btn.onclick = () => { if (typeof show_10641290 === 'function') show_10641290().then(() => { hasRevived=true; isGameOver=false; document.getElementById('popup').style.display='none'; animate(); }); };
+            document.getElementById('popup').style.display = 'block';
+        }
+
+        function finalizeGameOver(type) {
+            gameData.carHealth = Math.max(0, gameData.carHealth - 20);
+            if(Math.floor(distance) > gameData.bestDist) gameData.bestDist = Math.floor(distance);
+            gameData.diamonds += coins; saveGameData();
+            gameOverCounter++;
+            if (gameOverCounter >= 5) { gameOverCounter = 0; localStorage.setItem(AD_COUNT_KEY, 0); if (typeof show_10641290 === 'function') show_10641290(); } 
+            else localStorage.setItem(AD_COUNT_KEY, gameOverCounter);
+            showSmartPopup(type);
+            updateDashboardUI();
+        }
+
+        function spawnEmojiItem(type) {
+            const canvas = document.createElement('canvas'); canvas.width = 128; canvas.height = 128;
+            const ctx = canvas.getContext('2d'); ctx.font = '100px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.fillText(type, 64, 64);
+            const tex = new THREE.CanvasTexture(canvas);
+            const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex }));
+            sprite.scale.set(12, 12, 1); sprite.position.set((Math.random()*80)-40, 8, -2200);
+            scene.add(sprite);
+            if(type === '💎') diamondObjects.push(sprite); else if(type === '⛽') fuelObjects.push(sprite); else repairObjects.push(sprite);
+        }
+
+        function spawnTraffic() {
+            const v = createDetailedSportsCar(cityColors[Math.floor(Math.random()*cityColors.length)]);
+            let carsAtZ = traffic.filter(t => Math.abs(t.mesh.position.z - (-2200)) < 30);
+            if (carsAtZ.length >= 2) return;
+            let posX = (Math.random()*80)-40; if(carsAtZ.length===1) posX = (carsAtZ[0].mesh.position.x > 0) ? carsAtZ[0].mesh.position.x-35 : carsAtZ[0].mesh.position.x+35;
+            v.position.set(posX, 4, -2200); scene.add(v); traffic.push({ mesh: v, zig: Math.random()<0.4, off: Math.random()*100, missed: false });
+        }
+
+        function handleItems(list, cb) {
+            for(let i=list.length-1; i>=0; i--) {
+                list[i].position.z += (currentSpeed/2.5);
+                if(Math.abs(list[i].position.x - playerCar.position.x) < 12 && Math.abs(list[i].position.z - playerCar.position.z) < 15) { cb(); scene.remove(list[i]); list.splice(i,1); }
+                else if(list[i].position.z > 600) { scene.remove(list[i]); list.splice(i,1); }
+            }
+        }
+
+        function updateDashboardUI() { document.getElementById('coin-txt').innerText = gameData.diamonds; document.getElementById('high-txt').innerText = formatVal(gameData.bestDist); document.getElementById('level-val').innerText = getLevel(gameData.bestDist); document.getElementById('h-display').innerText = gameData.carHealth + "%"; }
+        function saveGameData() { localStorage.setItem(STORE_KEY, JSON.stringify(gameData)); }
+        function getLevel(s) { for(let i=levelMilestones.length-1; i>=0; i--) { if(s >= levelMilestones[i]) { if (i === levelMilestones.length-1) return levelMilestones.length + Math.floor((s-50000)/10000); return i+1; } } return 1; }
+        function formatVal(n) { let v = Math.floor(n); return v < 1000 ? v+" m" : (v/1000).toFixed(1)+" km"; }
+        function showLevelProgress() { if(isGameOver) return; isPaused=true; cancelAnimationFrame(animationId); const curLvl=getLevel(gameData.bestDist); const nextD= (curLvl < levelMilestones.length) ? levelMilestones[curLvl] : 50000 + (curLvl - 30)*10000; document.getElementById('pop-title').innerText="LEVEL STATUS"; document.getElementById('pop-stats').innerHTML=`Level: ${curLvl}<br>Goal: ${nextD}m<br>Remaining: ${Math.max(0, nextD-Math.floor(distance))}m`; document.getElementById('restart-btn').innerText="RESUME"; document.getElementById('restart-btn').onclick=()=>{isPaused=false; document.getElementById('popup').style.display='none'; animate();}; document.getElementById('popup').style.display='block'; }
+        function resetGameState() { isGameOver=false; isPaused=false; distance=0; coins=0; fuelLevel=14; turboTime=0; nearMissCount=0; invincibilityTime=0; repairPartsCount=0; lastTrafficDist=0; lastDiamondDist=0; lastFuelDist=0; lastRepairDist=0; playerCar.position.x=0; [traffic, diamondObjects, fuelObjects, repairObjects].forEach(l => { l.forEach(o => scene.remove(o.mesh || o)); l.length=0; }); document.getElementById('popup').style.display='none'; }
+        function setupControls() {
+            const knob = document.getElementById('slider-knob'), rail = document.getElementById('slider-rail');
+            const upd = (y) => { let r = rail.getBoundingClientRect(); let ratio = Math.max(0, Math.min(1, (r.bottom-y)/r.height)); knob.style.bottom = (ratio*100-8)+'%'; currentSpeed = 30 + ratio*90; };
+            rail.addEventListener('touchstart', e => upd(e.touches[0].clientY));
+            window.addEventListener('touchmove', e => { upd(e.touches[0].clientY); e.preventDefault(); }, {passive: false});
+            document.getElementById('btn-l').onpointerdown = () => moveDir = -3.2; document.getElementById('btn-l').onpointerup = () => moveDir = 0;
+            document.getElementById('btn-r').onpointerdown = () => moveDir = 3.2; document.getElementById('btn-r').onpointerup = () => moveDir = 0;
+        }
+        function spawnCloud() { const c = new THREE.Mesh(new THREE.SphereGeometry(30, 8, 8), new THREE.MeshBasicMaterial({color: 0xffffff, transparent: true, opacity: 0.5})); c.position.set(Math.random()*4000-2000, 400, -Math.random()*4000); scene.add(c); clouds.push({mesh: c}); }
+        function showToast(msg, isPink = false) { const t = document.getElementById('game-toast'); t.innerText = msg; t.style.borderColor = isPink ? 'var(--neon-pink)' : 'var(--neon-yellow)'; t.style.color = isPink ? 'var(--neon-pink)' : 'var(--neon-yellow)'; t.style.opacity = 1; setTimeout(() => t.style.opacity = 0, 2000); }
+
+        window.onload = init;
+    </script>
+</body>
+</html>
